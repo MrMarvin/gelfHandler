@@ -5,6 +5,7 @@ License: BSD I guess
 """
 import logging
 from socket import socket, AF_INET, SOCK_DGRAM, SOCK_STREAM, getfqdn
+from ssl import *
 from json import dumps
 from zlib import compress
 
@@ -20,6 +21,7 @@ class handler(logging.Handler):
             self.port = 12202
         if self.proto == 'TCP' and self.port is None:
             self.port = 12201
+        self.tls = kw.get('tls', False)
         self.facility = kw.get('facility', None)
         self.fromHost = kw.get('fromHost', getfqdn())
         logging.Handler.__init__(self)
@@ -41,6 +43,8 @@ class handler(logging.Handler):
             self.sock = socket(AF_INET, SOCK_DGRAM)
         if self.proto == 'TCP':
             self.sock = socket(AF_INET, SOCK_STREAM)
+            if self.tls:
+                self.sock = wrap_socket(self.sock, ssl_version=PROTOCOL_TLSv1, cert_reqs=CERT_NONE)
             self.sock.connect((self.host, int(self.port)))
         recordDict = record.__dict__
         msgDict = {}
